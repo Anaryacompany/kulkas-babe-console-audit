@@ -1,0 +1,9 @@
+{
+  "name": "kulkas-babe-console-audit",
+  "private": true,
+  "type": "module",
+  "description": "Console Audit Delivery Kulkas Babe — upload CSV order master BAUS, cek telat berangkat / telat sampai / nganggur / NYANTAI.",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0"
+  }
+}

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console Audit Delivery — Kulkas Babe</title>
+<style>
+:root{
+  --font-anthropic-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-anthropic-serif: Georgia, "Times New Roman", serif;
+  --color-fg:#1f1e1d; --color-fg-muted:#6b6862; --color-bg:#f5f4ef; --color-panel:#ffffff; --color-border-line:#e3e1da;
+  --color-ok:#2f7d4f; --color-warn:#b26b00; --color-bad:#c2362b;
+  --chart-1:#c96442; --chart-2:#4b7bb5; --chart-3:#6c8f4e;
+  --cds-font-size-caption:12.5px; --cds-font-size-body:14px; --cds-font-size-heading:17px; --cds-font-size-title:28px; --cds-font-weight-medium:600;
+  --cds-gap-xs:4px; --cds-gap-sm:8px; --cds-gap-md:12px; --cds-gap-lg:18px; --cds-gap-xl:24px; --cds-pad-lg:16px; --cds-radius:10px;
+  --cds-surface-popover:#ffffff; --cds-border:#d9d6cd; --cds-shadow-popover:0 4px 16px rgba(0,0,0,.12); --cds-text-secondary:#6b6862;
+}
+@media (prefers-color-scheme: dark){:root{
+  --color-fg:#ecebe6; --color-fg-muted:#a6a39b; --color-bg:#1c1b19; --color-panel:#262522; --color-border-line:#3a3935;
+  --color-ok:#6cc08b; --color-warn:#e0a640; --color-bad:#ef7a6e; --cds-surface-popover:#2e2d2a; --cds-border:#45433e; --cds-text-secondary:#a6a39b;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans);font-size:var(--cds-font-size-body)}
+#dash-root{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+[hidden]{display:none !important}
+.dash-select{font:inherit;font-size:var(--cds-font-size-body);padding:7px 30px 7px 10px;border:1px solid var(--color-border-line);border-radius:8px;background-color:var(--color-panel);color:var(--color-fg);min-width:160px}
+.dash-skeleton{color:transparent !important}
+
+.dt-wrap{font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-xl)}
+.dt-title{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.dt-sub{color:var(--color-fg-muted);font-size:var(--cds-font-size-body);margin:4px 0 0}
+.dt-lead{font-size:var(--cds-font-size-heading);margin:0;line-height:1.4}
+.dt-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg)}
+.dt-rule{border-left:4px solid var(--color-warn)}
+.dt-rule p{margin:0;line-height:1.5}
+.dt-h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0 0 4px}
+.dt-note{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin:0 0 var(--cds-gap-md)}
+.dt-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--cds-gap-md)}
+.dt-tile .dt-num{font-family:var(--font-anthropic-serif);font-weight:400;font-size:32px;line-height:1.1;font-variant-numeric:tabular-nums}
+.dt-tile .dt-lab{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin-top:4px;line-height:1.4}
+button.dt-tile{text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%}
+button.dt-tile:hover{border-color:var(--color-fg-muted)}
+.dt-tile .dt-num,.dt-tile .dt-lab,.dt-tile .dt-go{display:block}
+.dt-tile .dt-go{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin-top:6px}
+.dt-bad{color:var(--color-bad)}
+.dt-ok{color:var(--color-ok)}
+.dt-scroll{overflow-x:auto}
+.dt-table{border-collapse:collapse;width:100%;font-size:var(--cds-font-size-body);font-variant-numeric:tabular-nums}
+.dt-table th{text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.dt-table td{padding:6px 8px;border-bottom:1px solid var(--color-border-line);vertical-align:top}
+.dt-table td.dt-n,.dt-table th.dt-n{text-align:right;white-space:nowrap}
+.dt-table td.dt-wrapcell{min-width:220px}
+.dt-table tr.dt-row{cursor:pointer}
+.dt-table tr.dt-row:hover td{background:var(--color-bg)}
+.dt-table tr.dt-open td{background:var(--color-bg)}
+.dt-detail td{background:var(--color-bg);padding:8px 12px 14px}
+.dt-sub-table{font-size:var(--cds-font-size-caption)}
+.dt-pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:var(--cds-font-size-caption);border:1px solid var(--color-border-line);white-space:nowrap}
+.dt-pill.dt-telat{color:var(--color-bad);border-color:var(--color-bad)}
+.dt-pill.dt-aman{color:var(--color-ok);border-color:var(--color-ok)}
+.dt-pill.dt-nyaris{color:var(--color-warn);border-color:var(--color-warn)}
+.dt-st-telat{color:var(--color-bad);font-weight:var(--cds-font-weight-medium)}
+.dt-st-nyaris{color:var(--color-warn)}
+.dt-mt{margin-top:var(--cds-gap-md)}
+.dt-filters{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm);margin-bottom:var(--cds-gap-md)}
+.dt-filters label{display:flex;flex-direction:column;gap:2px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.dt-chart{position:relative;min-height:150px}
+.dt-tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);box-shadow:var(--cds-shadow-popover);border-radius:var(--cds-radius);padding:6px 8px;font-size:var(--cds-font-size-caption);white-space:nowrap}
+.dt-list{margin:0;padding-left:20px;line-height:1.6}
+.dt-list li{margin-bottom:4px}
+.dt-cat{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);line-height:1.45}
+.dt-cat div+div{margin-top:3px}
+.dt-hint{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.dt-details summary{cursor:pointer;font-weight:var(--cds-font-weight-medium)}
+.dt-details p{line-height:1.5}
+.dt-console{display:flex;flex-direction:column;gap:var(--cds-gap-md);border-left:4px solid var(--color-ok)}
+.dt-up-row{display:flex;flex-wrap:wrap;gap:var(--cds-gap-lg);align-items:center;justify-content:space-between}
+.dt-step{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin-bottom:4px}
+.dt-file-nama{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);word-break:break-all}
+.dt-file-hari{margin-top:4px}
+.dt-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--cds-radius);background:var(--color-fg);color:var(--color-bg);font:inherit;font-weight:var(--cds-font-weight-medium);border:1px solid var(--color-fg);cursor:pointer}
+.dt-btn:hover{opacity:.9}
+.dt-btn[disabled]{opacity:.4;cursor:not-allowed}
+.dt-btn.dt-btn-2{background:transparent;color:var(--color-fg);border-color:var(--color-border-line)}
+.dt-msg{margin:0;font-size:var(--cds-font-size-body)}
+.dt-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--cds-gap-md);margin:var(--cds-gap-md) 0}
+.dt-rules label{display:flex;flex-direction:column;gap:6px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);line-height:1.4}
+.dt-in{font:inherit;font-size:var(--cds-font-size-heading);padding:6px 10px;border:1px solid var(--color-border-line);border-radius:var(--cds-radius);background:var(--color-bg);color:var(--color-fg);width:110px;font-variant-numeric:tabular-nums}
+.dt-actions{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm);align-items:center}
+.dt-masuk{max-width:420px;margin:40px auto 0;width:100%}
+.dt-pin{width:180px;letter-spacing:4px}
+</style>
+</head>
+<body>
+<div id="dash-root"><div class="dt-wrap" data-read lang="id">
+
+<header id="judul">
+  <h1 class="dt-title">Console Audit Delivery</h1>
+  <p class="dt-sub">Upload CSV order master dari BAUS. Console membaca tanggalnya sendiri, memotong per hari operasional (jam <span data-draw="k" data-k="JAM_MULAI" data-format="jam">—</span> sampai jam <span data-draw="k" data-k="JAM_SELESAI" data-format="jam">—</span> hari berikutnya), lalu langsung menghitung semuanya.</p>
+</header>
+
+<section id="masuk" class="dt-card dt-masuk" hidden>
+  <h2 class="dt-h2">Masuk</h2>
+  <p class="dt-note">Masukkan PIN console.</p>
+  <form id="form-masuk" class="dt-actions" autocomplete="off">
+    <input type="password" inputmode="numeric" class="dt-in dt-pin" id="isi-pin" placeholder="PIN" aria-label="PIN" autocomplete="current-password">
+    <button type="submit" class="dt-btn" id="tombol-masuk">Masuk</button>
+  </form>
+  <p class="dt-msg dt-mt" data-draw="status-masuk"></p>
+</section>
+
+<section id="upload" class="dt-card dt-console dt-perlu-masuk" hidden>
+  <div class="dt-up-row">
+    <div>
+      <div class="dt-step">Data yang sedang dipakai</div>
+      <div data-draw="info-file" data-source="hari_list">—</div>
+    </div>
+    <div>
+      <label class="dt-btn" id="tombol-upload">⬆ Upload CSV order master<input type="file" accept=".csv,text/csv" id="pilih-file" hidden></label>
+      <p class="dt-hint dt-mt">Upload baru menggantikan file lama untuk semua orang.</p>
+      <div class="dt-actions dt-mt"><button type="button" class="dt-btn dt-btn-2" id="tombol-muat">↻ Muat data terbaru</button><button type="button" class="dt-btn dt-btn-2" id="tombol-keluar">Keluar</button></div>
+    </div>
+  </div>
+  <p class="dt-msg" data-draw="status-upload"></p>
+  <p class="dt-hint dt-perlu-kosong">Cara pakai: export CSV order master dari BAUS → klik <b>Upload CSV order master</b> → hasil langsung muncul di bawah.</p>
+  <div class="dt-filters" id="pilih-hari-wrap" hidden>
+    <label>Lihat hari<select class="dash-select" data-draw="pilih-hari" data-source="hari_list" aria-label="Pilih hari operasional"></select></label>
+  </div>
+  <p class="dt-hint" data-draw="info-luar"></p>
+</section>
+
+<section id="hasil" class="dt-perlu-data" hidden>
+  <h2 class="dt-h2">Hasil</h2>
+  <p class="dt-note">Klik kotak untuk lihat daftarnya.</p>
+  <div class="dt-tiles">
+    <button type="button" class="dt-card dt-tile" data-ke="daftar-kasus"><span class="dt-num dt-bad" data-draw="angka" data-source="ringkasan" data-field="telat" data-row="0">—</span><span class="dt-lab">kali driver <b>telat berangkat</b>, dari <span data-draw="angka" data-source="ringkasan" data-field="berangkat" data-row="0">—</span> kali berangkat (<span data-draw="angka" data-source="ringkasan" data-field="persen" data-row="0">—</span>%)</span><span class="dt-go">Lihat daftar →</span></button>
+    <button type="button" class="dt-card dt-tile" data-ke="sampai-customer"><span class="dt-num dt-bad" data-draw="angka" data-source="sampai_ringkas" data-field="telat" data-row="0">—</span><span class="dt-lab">order <b>telat sampai</b> ke customer, dari <span data-draw="angka" data-source="sampai_ringkas" data-field="dihitung" data-row="0">—</span> order (<span data-draw="angka" data-source="sampai_ringkas" data-field="persen_telat" data-row="0">—</span>%)</span><span class="dt-go">Lihat daftar →</span></button>
+    <button type="button" class="dt-card dt-tile" data-ke="sampai-customer"><span class="dt-num" data-draw="angka" data-source="sampai_ringkas" data-field="nyaris" data-row="0">—</span><span class="dt-lab">order <b>nyaris telat</b> (sampai kurang dari <span data-draw="k" data-k="NYARIS">—</span> menit sebelum estimasi)</span><span class="dt-go">Lihat daftar →</span></button>
+    <button type="button" class="dt-card dt-tile" data-ke="nganggur"><span class="dt-num" data-draw="angka" data-source="nganggur_ringkas" data-field="total" data-row="0">—</span><span class="dt-lab">order HEMAT/PRIORITAS <b>nganggur</b> lebih dari <span data-draw="k" data-k="SIAP">—</span> menit belum masuk batch</span><span class="dt-go">Lihat daftar →</span></button>
+    <button type="button" class="dt-card dt-tile" data-ke="nyantai"><span class="dt-num" data-draw="angka" data-source="nyantai" data-field="lewat_tahan" data-row="0">—</span><span class="dt-lab">order <b>NYANTAI</b> baru masuk batch lewat <span data-draw="k" data-k="NY_MAX">—</span> menit sejak dibuat</span><span class="dt-go">Lihat daftar →</span></button>
+  </div>
+</section>
+
+<div class="dt-card dt-rule dt-perlu-data" id="aturan" hidden>
+  <p><b>Aturan berangkat:</b> waktu dihitung mulai <b>order pertama masuk batch</b> driver. Paling lambat <b><span data-draw="k" data-k="BATAS">—</span> menit</b> driver harus sudah jalan. Mau nambah order berapa pun, tetap berangkat di menit ke-<span data-draw="k" data-k="BATAS">—</span>.</p>
+</div>
+
+<p class="dt-lead dt-perlu-data" id="kesimpulan" hidden>Dari <b data-draw="angka" data-source="ringkasan" data-field="berangkat" data-row="0" class="dash-skeleton">—</b> kali driver berangkat, <b class="dt-bad"><span data-draw="angka" data-source="ringkasan" data-field="telat" data-row="0" class="dash-skeleton">—</span> kali telat jalan</b>. <span data-draw="angka" data-source="ringkasan" data-field="driver_telat" data-row="0" class="dash-skeleton">—</span> dari <span data-draw="angka" data-source="ringkasan" data-field="driver_total" data-row="0" class="dash-skeleton">—</span> driver pernah telat berangkat, total <span data-draw="angka" data-source="ringkasan" data-field="menit_kebuang" data-row="0" class="dash-skeleton">—</span> menit kebuang di outlet, <span data-draw="angka" data-source="ringkasan" data-field="parah" data-row="0" class="dash-skeleton">—</span> kali telat parah (lewat lebih dari <span data-draw="k" data-k="PARAH">—</span> menit dari batas).</p>
+
+<section id="per-outlet" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Outlet mana yang paling sering telat berangkat</h2>
+  <p class="dt-note">Persen keberangkatan yang telat di tiap outlet.</p>
+  <div class="dt-chart" data-draw="chart-outlet" data-source="per_outlet" role="img" aria-label="Persen keberangkatan telat per outlet"></div>
+</section>
+
+<section id="per-driver" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Per driver</h2>
+  <p class="dt-note">Diurutkan dari yang paling sering telat. "Menit kebuang" = jumlah kelebihan waktu dari batas di semua keberangkatan yang telat.</p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="per_driver" data-row-key="driver">
+      <thead><tr>
+        <th data-field="driver">Driver</th><th data-field="outlet">Outlet</th>
+        <th class="dt-n" data-field="berangkat">Berangkat</th><th class="dt-n" data-field="telat">Telat</th>
+        <th class="dt-n" data-field="terlama">Nunggu paling lama (menit)</th><th class="dt-n" data-field="menit_kebuang">Menit kebuang</th>
+      </tr></thead>
+      <tbody data-draw="tabel-driver"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="daftar-kasus" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Daftar keberangkatan yang telat</h2>
+  <p class="dt-note">Klik satu baris untuk lihat order apa saja yang dibawa, lengkap dengan customer. Diurutkan dari yang paling lama lewat batas.</p>
+  <div class="dt-filters">
+    <label>Outlet<select class="dash-select" data-draw="pilih-outlet" data-source="audit" aria-label="Pilih outlet"></select></label>
+    <label>Driver<select class="dash-select" data-draw="pilih-driver" data-source="audit" aria-label="Pilih driver"></select></label>
+    <label>Tampilkan<select class="dash-select" id="pilih-tampil" aria-label="Tampilkan">
+      <option value="telat">Yang telat saja</option>
+      <option value="semua">Semua keberangkatan</option>
+    </select></label>
+  </div>
+  <p class="dt-hint" data-draw="jumlah-kasus">—</p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="audit" data-row-key="batch">
+      <thead><tr>
+        <th data-field="driver">Driver</th><th data-field="outlet">Outlet</th>
+        <th data-field="masuk_batch">Order 1 masuk batch</th><th data-field="berangkat">Berangkat</th>
+        <th class="dt-n" data-field="tunggu_menit">Nunggu (menit)</th><th class="dt-n" data-field="lewat_menit">Lewat batas (menit)</th>
+        <th class="dt-n" data-field="jumlah_order">Bawa order</th><th data-source="dampak_trip" data-field="dampak">Ke customer</th><th data-field="catatan">Catatan</th><th data-field="batch">Batch</th>
+      </tr></thead>
+      <tbody data-draw="tabel-kasus"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="sampai-customer" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Telat sampai ke customer, dibanding estimasi di struk</h2>
+  <p class="dt-note">Estimasi = jam janji sampai yang dibuat BAUS waktu order masuk (yang tercetak di struk). Sampai = jam driver tekan "sampai" di lokasi customer. <b>Nyaris telat</b> = sampai kurang dari <span data-draw="k" data-k="NYARIS">—</span> menit sebelum estimasi.</p>
+  <p class="dt-lead" id="kesimpulan-sampai">Dari <b data-draw="angka" data-source="sampai_ringkas" data-field="dihitung" data-row="0">—</b> order yang diantar, <b class="dt-bad" data-draw="angka" data-source="sampai_ringkas" data-field="telat" data-row="0">—</b> sampai lewat estimasi. <b data-draw="angka" data-source="sampai_ringkas" data-field="telat_karena_berangkat" data-row="0">—</b> di antaranya masih sempat kalau driver jalan di menit ke-<span data-draw="k" data-k="BATAS">—</span>.</p>
+  <ul class="dt-list dt-mt">
+    <li>Dari <b data-draw="angka" data-source="sampai_ringkas" data-field="trip_telat" data-row="0">—</b> keberangkatan yang telat: <b class="dt-bad" data-draw="angka" data-source="sampai_ringkas" data-field="trip_bikin_telat" data-row="0">—</b> bikin order telat sampai, <b data-draw="angka" data-source="sampai_ringkas" data-field="trip_bikin_nyaris" data-row="0">—</b> bikin order nyaris telat, <span data-draw="angka" data-source="sampai_ringkas" data-field="trip_aman" data-row="0">—</span> masih aman. Lihat kolom "Ke customer" di daftar keberangkatan.</li>
+    <li><b data-draw="angka" data-source="sampai_ringkas" data-field="nyaris_trip_telat" data-row="0">—</b> dari <span data-draw="angka" data-source="sampai_ringkas" data-field="nyaris" data-row="0">—</span> order nyaris telat ikut keberangkatan yang telat. <b data-draw="angka" data-source="sampai_ringkas" data-field="nyaris_selamat" data-row="0">—</b> di antaranya masih longgar (sisa <span data-draw="k" data-k="NYARIS">—</span> menit atau lebih) kalau driver jalan di menit ke-<span data-draw="k" data-k="BATAS">—</span>.</li>
+    <li>PRIORITAS: <b data-draw="angka" data-source="sampai_ringkas" data-field="prioritas_kena" data-row="0">—</b> dari <span data-draw="angka" data-source="sampai_ringkas" data-field="prioritas_total" data-row="0">—</span> order telat atau nyaris. HEMAT <span data-draw="angka" data-source="sampai_ringkas" data-field="hemat_kena" data-row="0">—</span> dari <span data-draw="angka" data-source="sampai_ringkas" data-field="hemat_total" data-row="0">—</span>, NYANTAI <span data-draw="angka" data-source="sampai_ringkas" data-field="nyantai_kena" data-row="0">—</span> dari <span data-draw="angka" data-source="sampai_ringkas" data-field="nyantai_total" data-row="0">—</span>. Biasanya order sampai <span data-draw="angka" data-source="sampai_ringkas" data-field="sisa_median" data-row="0">—</span> menit lebih awal dari estimasi (nilai tengah).</li>
+  </ul>
+  <p class="dt-note dt-mt">Order yang telat dan nyaris telat, dari yang paling telat. "Sisa" minus = telat sampai.</p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="sampai_mepet" data-row-key="order">
+      <thead><tr>
+        <th data-field="status">Status</th><th data-field="order">Order</th><th data-field="outlet">Outlet</th><th data-field="driver">Driver</th><th data-field="jenis">Jenis</th>
+        <th data-field="customer">Customer</th><th data-field="hp">HP</th>
+        <th data-field="estimasi">Estimasi</th><th data-field="sampai">Sampai</th>
+        <th class="dt-n" data-field="sisa_menit">Sisa (menit)</th><th class="dt-n" data-field="lewat_menit">Driver lewat batas berangkat (menit)</th>
+        <th class="dt-n" data-field="jika_tepat">Sisa kalau jalan di menit ke-<span data-draw="k" data-k="BATAS">—</span></th>
+        <th data-field="sebab">Kenapa</th><th data-field="batch">Batch</th>
+      </tr></thead>
+      <tbody data-draw="tabel-sampai"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="nganggur" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Order HEMAT &amp; PRIORITAS yang nganggur lebih dari <span data-draw="k" data-k="SIAP">—</span> menit belum masuk batch</h2>
+  <p class="dt-note">Dihitung dari order dibuat sampai masuk batch driver, lalu dipecah: berapa lama di packing, berapa lama nunggu diplot ke driver.</p>
+  <ul class="dt-list">
+    <li>Ada <b class="dt-bad" data-draw="angka" data-source="nganggur_ringkas" data-field="total" data-row="0">—</b> order (<span data-draw="angka" data-source="nganggur_ringkas" data-field="prioritas" data-row="0">—</span> PRIORITAS). <span data-draw="angka" data-source="nganggur_ringkas" data-field="terjadwal" data-row="0">—</span> di antaranya order terjadwal, jadi wajar.</li>
+    <li>Dari <span data-draw="angka" data-source="nganggur_ringkas" data-field="sisa" data-row="0">—</span> sisanya: <b data-draw="angka" data-source="nganggur_ringkas" data-field="packing" data-row="0">—</b> paling lama di packing, <b data-draw="angka" data-source="nganggur_ringkas" data-field="nunggu_driver" data-row="0">—</b> paling lama nunggu diplot ke driver. <span data-draw="angka" data-source="nganggur_ringkas" data-field="hold" data-row="0">—</span> sempat di-hold tele.</li>
+    <li><b data-draw="angka" data-source="nganggur_ringkas" data-field="ada_driver_kosong" data-row="0">—</b> order nunggu padahal ada driver di outlet yang sudah balik dan belum dapat batch.</li>
+  </ul>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="nganggur" data-row-key="order">
+      <thead><tr>
+        <th data-field="order">Order</th><th data-field="outlet">Outlet</th><th data-field="jenis">Jenis</th><th data-field="customer">Customer</th><th data-field="hp">HP</th>
+        <th data-field="dibuat">Dibuat</th><th data-field="packing">Selesai packing</th><th data-field="masuk_batch">Masuk batch</th>
+        <th class="dt-n" data-field="menit_dibuat_ke_packing">Di packing (menit)</th><th class="dt-n" data-field="menit_packing_ke_batch">Nunggu driver (menit)</th>
+        <th class="dt-n" data-field="menit_dibuat_ke_batch">Total (menit)</th><th data-field="sebab">Kenapa</th><th data-field="driver_nganggur">Driver kosong di outlet</th>
+      </tr></thead>
+      <tbody data-draw="tabel-nganggur"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="nyantai" class="dt-card dt-perlu-data" hidden>
+  <h2 class="dt-h2">Order NYANTAI</h2>
+  <ul class="dt-list">
+    <li><b data-draw="angka" data-source="nyantai" data-field="pertama" data-row="0">—</b> NYANTAI jadi order pertama di batch. <b data-draw="angka" data-source="nyantai" data-field="ditahan" data-row="0">—</b> di antaranya ditahan sistem sekitar <span data-draw="k" data-k="TAHAN">—</span> menit setelah selesai packing, baru masuk batch.</li>
+    <li><b data-draw="angka" data-source="nyantai" data-field="barengan" data-row="0">—</b> NYANTAI ikut barengan order lain. <b data-draw="angka" data-source="nyantai" data-field="barengan_cepat" data-row="0">—</b> di antaranya langsung masuk batch, kurang dari <span data-draw="k" data-k="CEPAT">—</span> menit sejak order dibuat.</li>
+    <li>Setelah masuk batch, aturannya sama: <span data-draw="k" data-k="BATAS">—</span> menit. <b data-draw="angka" data-source="nyantai" data-field="trip_telat" data-row="0">—</b> dari <b data-draw="angka" data-source="nyantai" data-field="trip_bawa" data-row="0">—</b> keberangkatan yang bawa NYANTAI telat jalan.</li>
+    <li><b class="dt-bad" data-draw="angka" data-source="nyantai" data-field="lewat_tahan" data-row="0">—</b> NYANTAI baru masuk batch lebih dari <span data-draw="k" data-k="NY_MAX">—</span> menit sejak dibuat:</li>
+  </ul>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="nyantai_lewat" data-row-key="order">
+      <thead><tr>
+        <th data-field="order">Order</th><th data-field="outlet">Outlet</th><th data-field="customer">Customer</th><th data-field="hp">HP</th>
+        <th class="dt-n" data-field="menit_dibuat_ke_batch">Dibuat → masuk batch (menit)</th>
+        <th data-field="sebab">Kenapa</th><th data-field="driver_nganggur">Driver kosong di outlet waktu itu</th>
+      </tr></thead>
+      <tbody data-draw="tabel-nyantai"></tbody>
+    </table>
+  </div>
+</section>
+
+<details class="dt-details dt-card dt-perlu-masuk" id="ubah-aturan" hidden>
+  <summary>Ubah aturan</summary>
+  <p class="dt-note dt-mt">Angka ini dipakai semua orang yang masuk ke console. Setelah disimpan, semua hasil langsung dihitung ulang.</p>
+  <div class="dt-rules">
+    <label>Driver harus sudah berangkat paling lambat … menit sejak order pertama masuk batch<input type="number" class="dt-in" data-k="BATAS" min="1" max="60" step="0.5"></label>
+    <label>HEMAT/PRIORITAS dianggap nganggur kalau belum masuk batch lebih dari … menit sejak dibuat<input type="number" class="dt-in" data-k="SIAP" min="1" max="120" step="0.5"></label>
+    <label>Nyaris telat kalau sampai kurang dari … menit sebelum estimasi<input type="number" class="dt-in" data-k="NYARIS" min="0" max="60" step="0.5"></label>
+    <label>NYANTAI dianggap kelamaan kalau belum masuk batch lebih dari … menit sejak dibuat<input type="number" class="dt-in" data-k="NY_MAX" min="1" max="240" step="1"></label>
+    <label>Hari operasional mulai jam (0–23)<input type="number" class="dt-in" data-k="JAM_MULAI" min="0" max="23" step="1"></label>
+    <label>…sampai jam (0–23) hari berikutnya<input type="number" class="dt-in" data-k="JAM_SELESAI" min="0" max="23" step="1"></label>
+  </div>
+  <div class="dt-actions">
+    <button type="button" class="dt-btn" id="simpan-aturan">Simpan aturan</button>
+    <button type="button" class="dt-btn dt-btn-2" id="aturan-standar">Kembalikan ke standar</button>
+  </div>
+  <p class="dt-msg dt-mt" data-draw="status-aturan"></p>
+</details>
+
+<details class="dt-details dt-card dt-perlu-data" id="cara-baca" hidden>
+  <summary>Cara baca, data yang tidak dihitung, dan yang belum pasti</summary>
+  <p><b>Catatan di daftar keberangkatan:</b></p>
+  <ul class="dt-list">
+    <li><b>Ada hold tele</b>: order di-hold telemarketing saat sudah di batch (tambah produk, ganti, dll). Waktu tunggunya bisa bukan salah driver.</li>
+    <li><b>Struk diubah saat order sudah di batch</b>: tanda kemungkinan QRIS pindah botol atau ganti produk. Di data BAUS tidak ada tanda khusus QRIS pindah botol, jadi perlu dicek di grup.</li>
+    <li><b>Order tambahan masuk setelah menit ke-<span data-draw="k" data-k="BATAS">—</span></b>: driver masih nunggu order lain padahal sudah waktunya jalan. Bisa karena minta plot manual. Di data juga tidak ada tanda khusus plot manual.</li>
+    <li><b>Tanpa catatan</b>: murni nunggu di outlet.</li>
+  </ul>
+  <p><b>"Driver kosong di outlet"</b> = driver outlet yang sama, sudah balik dari antar sebelumnya di hari yang sama, dan belum dapat batch baru selama order itu menunggu (minimal 2 menit). Driver yang baru mulai shift dan belum pernah jalan tidak kelihatan di data.</p>
+  <p><b>Hari operasional</b> ditentukan dari jam order dibuat. Order yang dibuat di luar jam <span data-draw="k" data-k="JAM_MULAI" data-format="jam">—</span>–<span data-draw="k" data-k="JAM_SELESAI" data-format="jam">—</span> tidak ikut dihitung:</p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="luar_jam" data-row-key="order">
+      <thead><tr><th data-field="order">Order</th><th data-field="outlet">Outlet</th><th data-field="jenis">Jenis</th><th data-field="dibuat">Dibuat</th><th data-field="status">Status</th></tr></thead>
+      <tbody data-draw="tabel-luar"></tbody>
+    </table>
+  </div>
+  <p><b>Tidak dihitung di telat berangkat:</b></p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="tidak_dihitung" data-row-key="order">
+      <thead><tr><th data-field="order">Order</th><th data-field="batch">Batch</th><th data-field="dibuat">Dibuat</th><th data-field="alasan">Alasan</th></tr></thead>
+      <tbody data-draw="tabel-dikeluarkan"></tbody>
+    </table>
+  </div>
+  <p><b>Telat sampai:</b> estimasi dihitung BAUS waktu order masuk, bertingkat menurut jarak. Kalau tele menjanjikan jam lain lewat catatan, yang dipakai di sini tetap estimasi BAUS. Order yang diselesaikan paksa tele tidak dihitung, karena jam sampainya diketik manual:</p>
+  <div class="dt-scroll">
+    <table class="dt-table" data-source="sampai_tidak" data-row-key="order">
+      <thead><tr><th data-field="order">Order</th><th data-field="batch">Batch</th><th data-field="alasan">Alasan</th></tr></thead>
+      <tbody data-draw="tabel-sampai-tidak"></tbody>
+    </table>
+  </div>
+  <p><b>Yang belum pasti:</b> jam berangkat diambil dari tombol berangkat di BAUS atau dari GPS keluar outlet? Kalau dari tombol, driver yang telat mencet tombol ikut kehitung telat. Perlu dicek ke Pak Danish.</p>
+</details>
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="runtime.js"></script>
+<script src="calc.js"></script>
+<script src="parse.js"></script>
+<script src="draw.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
